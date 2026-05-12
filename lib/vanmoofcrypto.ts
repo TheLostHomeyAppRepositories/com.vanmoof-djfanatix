@@ -9,7 +9,7 @@ export default class vanmoofcrypto {
   //_aes: aesjs.ModeOfOperation;
 
 
-  constructor(encryptionKey: string) {
+  constructor(encryptionKey: string, passcodeLength: number = 6) {
 /*
     this._aes = new ModeOfOperation.ecb(new Uint8Array(Buffer.from(encryptionKey, 'hex')))
     console.log(this._aes,'aes'); 
@@ -20,9 +20,16 @@ export default class vanmoofcrypto {
  */   
 //VANLIB
     this._key = new Uint8Array(aesjs.utils.hex.toBytes(encryptionKey));
+    if (this._key.length === 17) {
+      this._key = this._key.subarray(1, this._key.length);
+    } else if (this._key.length < 16) {
+      const key = new Uint8Array(16);
+      key.set(this._key, 16 - this._key.length);
+      this._key = key;
+    }
     //console.log(this._key,'key'); 
 
-    this._passcode = this._key.subarray(0, 6);
+    this._passcode = this._key.subarray(0, passcodeLength);
     //console.log(this._passcode,'passcode'); 
 
    // this._aes = new ModeOfOperation.ecb(new Uint8Array(Buffer.from(encryptionKey, 'hex')))

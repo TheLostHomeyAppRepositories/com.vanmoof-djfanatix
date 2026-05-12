@@ -1,5 +1,26 @@
 {
   "1.0.1": {
     "en": "bugfix, images, logo"
+  },
+  "1.0.6": {
+    "en": "bugfix"
+  },
+  "1.0.7": {
+    "en": "bugfix"
+  },
+  "1.0.8": {
+    "en": "extra logging"
+  },
+  "1.0.9": {
+    "en": "add timezone"
+  },
+  "1.0.10": {
+    "en": "error codes"
+  },
+  "1.0.11": {
+    "en": "errorcodes"
+  },
+  "1.0.12": {
+    "en": "remove bugs"
   }
 }

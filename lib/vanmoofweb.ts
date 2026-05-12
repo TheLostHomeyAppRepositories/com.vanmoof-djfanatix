@@ -73,11 +73,19 @@ export default class vanMoofWeb {
 
     async getBikesDetails(authToken: string, apiKey: string) {
         const auth = 'Bearer ' + authToken;
+        const bikeDetails = await this.fetchDataFromVanmoof(auth, "getCustomerData?includeBikeDetails", "GET", apiKey) as bikeDetails;
+        console.log('bikeDetails', bikeDetails.data.bikeDetails);
+        return bikeDetails;
+        } 
+  
+/*
+    async getBikesDetails(authToken: string, apiKey: string) {
+        const auth = 'Bearer ' + authToken;
         try {
             const bikeDetails = await this.fetchDataFromVanmoof(auth, "getCustomerData?includeBikeDetails", "GET", apiKey) as bikeDetails;
     
             if (!bikeDetails || !bikeDetails.data || !bikeDetails.data.bikeDetails) {
-                throw Error("Invalid credentials, check login and password in settings.");
+                throw Error("Invalid credentials; check login and password in settings.");
             }
     
             console.log('bikeDetails', bikeDetails.data.bikeDetails);
@@ -86,4 +94,5 @@ export default class vanMoofWeb {
             throw Error("Invalid credentials, check login and password in settings.");
         }
     }
+        */
 }

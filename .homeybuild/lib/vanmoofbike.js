@@ -51,22 +51,36 @@ class vanmoofbike {
     }
     async readFromBike(bluetoothConnection, service, characteristic) {
         console.log('read from bike');
-        const genericAccessService = await bluetoothConnection.getService(service);
-        const data = await genericAccessService.read(characteristic);
-        const uint8Array = new Uint8Array(data);
-        //console.log(`Read ${uint8Array} from ${service} - ${characteristic}`)
-        return uint8Array;
+        this.ensureConnection(bluetoothConnection);
+        try {
+            const genericAccessService = await bluetoothConnection.getService(service);
+            const data = await genericAccessService.read(characteristic);
+            const uint8Array = new Uint8Array(data);
+            //console.log(`Read ${uint8Array} from ${service} - ${characteristic}`)
+            return uint8Array;
+        }
+        catch (error) {
+            console.log(`Failed to read from ${service} - ${characteristic}`, error);
+            throw error;
+        }
     }
     async writeToBike(bluetoothConnection, payload, service, characteristic, writeWithoutEncryption = false) {
-        const genericAccessService = await bluetoothConnection.getService(service);
-        if (!writeWithoutEncryption) {
-            const data = await this.makeEncryptedPayload(bluetoothConnection, payload);
-            await genericAccessService.write(characteristic, data);
-            console.log(`Wrote with encryption ${data} to ${service} - ${characteristic}`);
+        this.ensureConnection(bluetoothConnection);
+        try {
+            const genericAccessService = await bluetoothConnection.getService(service);
+            if (!writeWithoutEncryption) {
+                const data = await this.makeEncryptedPayload(bluetoothConnection, payload);
+                await genericAccessService.write(characteristic, data);
+                console.log(`Wrote with encryption ${data} to ${service} - ${characteristic}`);
+            }
+            else {
+                await genericAccessService.write(characteristic, payload);
+                console.log(`Wrote without encryption ${payload} to ${service} - ${characteristic}`);
+            }
         }
-        else {
-            await genericAccessService.write(characteristic, payload);
-            console.log(`Wrote without encryption ${payload} to ${service} - ${characteristic}`);
+        catch (error) {
+            console.log(`Failed to write to ${service} - ${characteristic}`, error);
+            throw error;
         }
     }
     async getSecurityChallenge(bluetoothConnection) {
@@ -75,11 +89,34 @@ class vanmoofbike {
         console.log('Nonce Security challenge', nonce);
         return nonce;
     }
+    async getIdentifier(bluetoothConnection) {
+        const Identifier = await this.readFromBike(bluetoothConnection, 'f000ffc004514000b000000000000000', 'f000ffc404514000b000000000000000');
+        const IdentifierDecrypt = this.cryptService.decrypt(Identifier);
+        console.log('Identifiercdecrypt custom', IdentifierDecrypt);
+        console.log('Identifier custom', Identifier);
+        // return functions;
+    }
+    async getFunctions(bluetoothConnection) {
+        const functions = await this.readFromBike(bluetoothConnection, '8e7f1a50087a44c9b292a2c628fdd9aa', '8e7f1a52087a44c9b292a2c628fdd9aa');
+        const functionsDecrypt = this.cryptService.decrypt(functions);
+        console.log('Functionsdecrypt', functionsDecrypt);
+        console.log('Functions', functions);
+        // return functions;
+    }
     async getParameters(bluetoothConnection) {
         const parameters = await this.readFromBike(bluetoothConnection, '8e7f1a50087a44c9b292a2c628fdd9aa', '8e7f1a54087a44c9b292a2c628fdd9aa');
         const parametersDecrypt = this.cryptService.decrypt(parameters);
-        // console.log('Parameters', parametersDecrypt)
+        console.log('Parameterscdecrypt', parametersDecrypt);
+        console.log('Parameters', parameters);
         return parametersDecrypt;
+    }
+    ensureConnection(bluetoothConnection) {
+        if (!bluetoothConnection) {
+            throw new Error('Bluetooth connection not available');
+        }
+        if (typeof bluetoothConnection.getService !== 'function') {
+            throw new Error('Bluetooth connection object is invalid');
+        }
     }
 }
 exports.default = vanmoofbike;

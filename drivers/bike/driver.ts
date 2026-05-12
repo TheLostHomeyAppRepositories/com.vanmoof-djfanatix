@@ -4,8 +4,7 @@
 
   class vanMoof extends Driver {
     private vanmoofweb: vanmoofweb = new vanmoofweb(this);
-  private currentSettings: { username?: string; password?: string; authToken?: string; apiKey?: string } = {};
-  private bikesFetched: boolean = false;
+    private currentSettings: { username?: string; password?: string; authToken?: string; apiKey?: string} = {};
 
   async onInit() {
     this.log('Vanmoof Driver has been initialized');
@@ -15,52 +14,15 @@
       authToken: this.homey.settings.get('authToken'),
       apiKey: this.homey.settings.get('apiKey'),
     };
-    await this.updateAuthAndBikes();
+    await this.getVanmoofApi();
   }
 
-  async updateAuthAndBikes() {
-    this.log('updateAuthAndBikes called');
-    try {
-      if (this.currentSettings.username && this.currentSettings.password) {
-        await this.getVanmoofApiAuth();
-        await this.fetchBikes();
-        this.bikesFetched = true;
-        this.log('updateAuthAndBikes successful');
-      } else {
-        this.log('Missing username or password.');
-        this.bikesFetched = false;
-      }
-    } catch (error) {
-      this.error(`updateAuthAndBikes error: ${error}`);
-      this.bikesFetched = false;
-    }
-  }
-
-  async fetchBikes() {
-    this.log('fetchBikes called');
-    if (!this.currentSettings.authToken || !this.currentSettings.apiKey) {
-      this.error('authToken or apiKey not set, please check the settings.');
-      return;
-    }
-    try {
-      await this.vanmoofweb.getBikesDetails(
-        this.currentSettings.authToken,
-        this.currentSettings.apiKey,
-      );
-      this.log('bikes fetched');
-    } catch (err) {
-      this.error(`fetchBikes error: ${err}`);
-      throw err;
-    }
-  }
-
-
-  async getVanmoofApiAuth() {
+  async getVanmoofApi() {
     const apiKey = 'fcb38d47-f14b-30cf-843b-26283f6a5819';
     const username = this.homey.settings.get('username');
     const password = this.homey.settings.get('password');
 
-    this.log('getVanmoofApiAuth called');
+    this.log('getVanmoofApi called');
     if (!username || !password) {
       this.error('Username or Password not set, please set them in the app settings page.');
       return;
@@ -73,12 +35,14 @@
       this.currentSettings.apiKey = apiKey;
       this.log('apiKey', apiKey);
       this.log('authToken', authToken);
-      this.log("getVanmoofApiAuth success");
+      this.log("getVanmoofApi success");
     } catch (error) {
-      this.error(`getVanmoofApiAuth error: ${error}`);
+      this.error(`Wrong username or Password: ${error}`);
       throw error;
     }
   }
+
+  
     /**
      * onPairListDevices is called when a user is adding a device and the 'list_devices' view is called.
      * This should return an array with the data of devices that are available for pairing.
@@ -89,14 +53,29 @@
     async onPairListDevices() {
       this.log('Onpairlistdevices');
       const apiKey = 'fcb38d47-f14b-30cf-843b-26283f6a5819';
+    
       try {
-        const bikes = await this.vanmoofweb.getBikesDetails('', apiKey);
+        if (!this.currentSettings.authToken || !this.currentSettings.apiKey) {
+          this.error('authToken or apiKey not set in currentSettings.');
+          return []; // Return empty array if auth data is missing.
+        }
+    
+        const bikes = await this.vanmoofweb.getBikesDetails(
+          this.currentSettings.authToken,
+          this.currentSettings.apiKey,
+        );
+    
         const devicesToPresent = [];
-  
+    
         for (const bike of bikes.data.bikeDetails) {
           if (
+            bike.bleProfile === 'ELECTRIFIED_2020' ||
+            bike.bleProfile === 'ELECTRIFIED_2019' ||
+            bike.bleProfile === 'ELECTRIFIED_2018' ||
             bike.bleProfile === 'ELECTRIFIED_2017' ||
-            bike.bleProfile === 'ELECTRIFIED_2016'
+            bike.bleProfile === 'ELECTRIFIED_2016' ||
+            bike.modelDetails?.Edition === 'S2' ||
+            bike.modelDetails?.Edition === 'X2'
           ) {
             devicesToPresent.push({
               name: bike.name,
@@ -105,24 +84,26 @@
                 name: bike.name,
                 frameNumber: bike.frameNumber,
                 uuid: bike.macAddress.replaceAll(':', '').toLowerCase(),
+                bleProfile: bike.bleProfile,
+                bikeModel: bike.modelDetails?.Edition,
               },
               store: {
                 encryptionKey: bike.key.encryptionKey,
                 passcode: bike.key.passcode,
-                bikeType: bike.modelDetails.Edition,
+                userKeyId: bike.key.userKeyId,
+                bleProfile: bike.bleProfile,
+                bikeModel: bike.modelDetails?.Edition,
               },
             });
           } else {
-            this.log(
-              `Skipping bike ${bike.name} with bleProfile: ${bike.bleProfile}`
-            );
+            this.log(`Skipping bike ${bike.name} with bleProfile: ${bike.bleProfile}`);
           }
         }
-  
+    
         return devicesToPresent;
       } catch (error) {
         this.error('Error getting bikes details:', error);
-        return [];
+        return []; // Return empty array on error.
       }
     }
   }

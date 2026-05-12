@@ -10,7 +10,6 @@ class vanMoof extends homey_1.Driver {
         super(...arguments);
         this.vanmoofweb = new vanmoofweb_1.default(this);
         this.currentSettings = {};
-        this.bikesFetched = false;
     }
     async onInit() {
         this.log('Vanmoof Driver has been initialized');
@@ -20,47 +19,13 @@ class vanMoof extends homey_1.Driver {
             authToken: this.homey.settings.get('authToken'),
             apiKey: this.homey.settings.get('apiKey'),
         };
-        await this.updateAuthAndBikes();
+        await this.getVanmoofApi();
     }
-    async updateAuthAndBikes() {
-        this.log('updateAuthAndBikes called');
-        try {
-            if (this.currentSettings.username && this.currentSettings.password) {
-                await this.getVanmoofApiAuth();
-                await this.fetchBikes();
-                this.bikesFetched = true;
-                this.log('updateAuthAndBikes successful');
-            }
-            else {
-                this.log('Missing username or password.');
-                this.bikesFetched = false;
-            }
-        }
-        catch (error) {
-            this.error(`updateAuthAndBikes error: ${error}`);
-            this.bikesFetched = false;
-        }
-    }
-    async fetchBikes() {
-        this.log('fetchBikes called');
-        if (!this.currentSettings.authToken || !this.currentSettings.apiKey) {
-            this.error('authToken or apiKey not set, please check the settings.');
-            return;
-        }
-        try {
-            await this.vanmoofweb.getBikesDetails(this.currentSettings.authToken, this.currentSettings.apiKey);
-            this.log('bikes fetched');
-        }
-        catch (err) {
-            this.error(`fetchBikes error: ${err}`);
-            throw err;
-        }
-    }
-    async getVanmoofApiAuth() {
+    async getVanmoofApi() {
         const apiKey = 'fcb38d47-f14b-30cf-843b-26283f6a5819';
         const username = this.homey.settings.get('username');
         const password = this.homey.settings.get('password');
-        this.log('getVanmoofApiAuth called');
+        this.log('getVanmoofApi called');
         if (!username || !password) {
             this.error('Username or Password not set, please set them in the app settings page.');
             return;
@@ -73,10 +38,10 @@ class vanMoof extends homey_1.Driver {
             this.currentSettings.apiKey = apiKey;
             this.log('apiKey', apiKey);
             this.log('authToken', authToken);
-            this.log("getVanmoofApiAuth success");
+            this.log("getVanmoofApi success");
         }
         catch (error) {
-            this.error(`getVanmoofApiAuth error: ${error}`);
+            this.error(`Wrong username or Password: ${error}`);
             throw error;
         }
     }
@@ -88,7 +53,11 @@ class vanMoof extends homey_1.Driver {
         this.log('Onpairlistdevices');
         const apiKey = 'fcb38d47-f14b-30cf-843b-26283f6a5819';
         try {
-            const bikes = await this.vanmoofweb.getBikesDetails('', apiKey);
+            if (!this.currentSettings.authToken || !this.currentSettings.apiKey) {
+                this.error('authToken or apiKey not set in currentSettings.');
+                return []; // Return empty array if auth data is missing.
+            }
+            const bikes = await this.vanmoofweb.getBikesDetails(this.currentSettings.authToken, this.currentSettings.apiKey);
             const devicesToPresent = [];
             for (const bike of bikes.data.bikeDetails) {
                 if (bike.bleProfile === 'ELECTRIFIED_2017' ||
@@ -104,7 +73,7 @@ class vanMoof extends homey_1.Driver {
                         store: {
                             encryptionKey: bike.key.encryptionKey,
                             passcode: bike.key.passcode,
-                            bikeType: bike.modelDetails.Edition,
+                            userKeyId: bike.key.userKeyId,
                         },
                     });
                 }
@@ -116,7 +85,7 @@ class vanMoof extends homey_1.Driver {
         }
         catch (error) {
             this.error('Error getting bikes details:', error);
-            return [];
+            return []; // Return empty array on error.
         }
     }
 }

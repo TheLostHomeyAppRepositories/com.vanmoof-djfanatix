@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.vanmoof",
-  "version": "1.0.1",
+  "version": "1.0.12",
   "compatibility": ">=12.0.0",
   "homeyCommunityTopicId": 133553,
   "brandColor": "#dfaf00",
@@ -10,7 +10,7 @@
     "en": "VanMoof"
   },
   "description": {
-    "en": "Connect your VanMoof Electrified S bike"
+    "en": "Connect your VanMoof bike"
   },
   "category": [
     "appliances"
@@ -102,12 +102,9 @@
       }
     },
     "error": {
-      "type": "number",
+      "type": "string",
       "getable": true,
       "setable": false,
-      "insights": true,
-      "min": 0,
-      "max": 100,
       "icon": "/assets/error.svg",
       "title": {
         "en": "Error code",
@@ -137,11 +134,9 @@
       }
     },
     "lastpoll": {
-      "type": "number",
+      "type": "string",
       "getable": true,
       "setable": false,
-      "min": 0,
-      "max": 61,
       "icon": "/assets/module.svg",
       "title": {
         "en": "Last Polling",
@@ -225,6 +220,70 @@
               "id": "interval",
               "type": "number",
               "value": 5,
+              "min": 1,
+              "label": {
+                "en": "Polling interval (min)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": {
+        "en": "Smartbike 2016"
+      },
+      "class": "vehicle",
+      "capabilities": [
+        "measure_module",
+        "distance",
+        "lockstate",
+        "modulestate",
+        "lights",
+        "error",
+        "lastpoll",
+        "alarm_generic"
+      ],
+      "connectivity": [
+        "ble",
+        "cloud"
+      ],
+      "energy": {
+        "batteries": [
+          "OTHER"
+        ]
+      },
+      "images": {
+        "small": "/drivers/smartbike/assets/images/small.jpg",
+        "large": "/drivers/smartbike/assets/images/large.jpg",
+        "xlarge": "/drivers/smartbike/assets/images/XLarge.jpg"
+      },
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "id": "smartbike",
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Vanmoof settings",
+            "nl": "Vanmoof instellingen"
+          },
+          "children": [
+            {
+              "id": "interval",
+              "type": "number",
+              "value": 60,
               "min": 1,
               "label": {
                 "en": "Polling interval (min)"
